@@ -41,55 +41,55 @@ addLayer("rebirth", {
         12: {
             title: "That's a while since the last one. How about some Point boosts?",
             description: "X5 Basic Points, X10 Point Fragments",
-            cost: new Decimal(400),
+            cost: new Decimal(1500),
             unlocked() { return hasUpgrade("rebirth", 11) },
         },
         13: {
             title: "Boosts to all",
             description: "X1.28 Rebirth Points, Basic Points and Point Fragments",
-            cost: new Decimal(12000),
+            cost: new Decimal(60000),
             unlocked() { return hasUpgrade("rebirth", 12) },
         },
         14: {
             title: "Point Fragmenting",
             description: "AN INSANE X50 BOOST TO Point Fragments",
-            cost: new Decimal(40000),
+            cost: new Decimal(300000),
             unlocked() { return hasUpgrade("rebirth", 13) },
         },
         21: {
             title: "Booster",
             description: "X1.36 RP (Rebirth Point), X2 BP (Basic Point), X100 PF (Point Fragment)",
-            cost: new Decimal(300000),
+            cost: new Decimal(1.5e6),
             unlocked() { return hasUpgrade("rebirth", 14) },
         },
         22: {
             title: "Another Exponent?",
             description: "+^0.01 BP, ^1.02 PF",
-            cost: new Decimal(12500000),
+            cost: new Decimal(40e6),
             unlocked() { return hasUpgrade("rebirth", 21) },
         },
         23: {
             title: "Boost",
             description: "X2 RP, X10 PF",
-            cost: new Decimal(50000000),
+            cost: new Decimal(60e6),
             unlocked() { return hasUpgrade("rebirth", 21) },
         },
         24: {
             title: "Final Reb Upg before Pres",
             description: "X1.28 RP, X2.22 BP, X20 PF",
-            cost: new Decimal(600000000),
+            cost: new Decimal(2.5e9),
             unlocked() { return hasUpgrade("rebirth", 23) },
         },
         31: {
             title: "Extension 1 - Upgrade Boosting",
             description: "Basic Upgrade 10 is boosted.",
-            cost: new Decimal(6.9e42),
+            cost: new Decimal(4.44e44),
             unlocked() { return hasUpgrade("prestige", 21) && hasUpgrade("rebirth", 24) },
         },
         32: {
             title: "1111Quad",
             description: "x1.11 PP, x11.11 RP, x1111.11 BP, x1111111.11 PF",
-            cost: new Decimal(1e48),
+            cost: new Decimal(5e50),
             unlocked() { return hasUpgrade("rebirth", 31) },
         },
         33: {
@@ -200,6 +200,30 @@ addLayer("rebirth", {
             cost: new Decimal("e2576280e3"),
             unlocked() { return hasMilestone("sac", 56) && hasUpgrade("rebirth", 73) },
         },
+        81: {
+            title: "Rebirth Rep Upgrades MK. 2",
+            description: "Starting at xe600B PF, ^1.6 the effect every upgrade. (Current: xe600B)",
+            cost: new Decimal("e31778268250e3"),
+            unlocked() { return hasUpgrade("era", 141) && hasUpgrade("rebirth", 75) },
+        },
+        82: {
+            title: "Rebirth Rep Upgrades MK. 2 - 2",
+            description: "Starting at xe600B PF, ^1.6 the effect every upgrade. (Current: xe960B)",
+            cost: new Decimal("e32996054475e3"),
+            unlocked() { return hasUpgrade("era", 141) && hasUpgrade("rebirth", 81) },
+        },
+        83: {
+            title: "Rebirth Rep Upgrades MK. 2 - 3",
+            description: "Starting at xe600B PF, ^1.6 the effect every upgrade. (Current: xe1.536T)",
+            cost: new Decimal("e34947700575e3"),
+            unlocked() { return hasUpgrade("era", 141) && hasUpgrade("rebirth", 82) },
+        },
+        84: {
+            title: "Rebirth Rep Upgrades MK. 2 - 4",
+            description: "Starting at xe600B PF, ^1.6 the effect every upgrade. (Current: xe2.4576T)",
+            cost: new Decimal("e38868729750e3"),
+            unlocked() { return hasUpgrade("era", 141) && hasUpgrade("rebirth", 83) },
+        },
 
         // dimensional shift
         15: {
@@ -244,6 +268,12 @@ addLayer("rebirth", {
             cost: new Decimal("e3425150e3"),
             unlocked() { return hasMilestone("sac", 27) && hasUpgrade("rebirth", 74) },
         },
+        85: {
+            title: "Rebirth Rep Upgrades MK. 2 - 5",
+            description: "Starting at xe600B PF, ^1.6 the effect every upgrade. (Current: xe3.93216T) [Secret Effect: x18 Era Crystals, unlock more Era Upgrades]",
+            cost: new Decimal("e43816900550e3"),
+            unlocked() { return hasUpgrade("era", 141) && hasUpgrade("rebirth", 84) },
+        },
     },
     milestones: {
         1: {
@@ -253,28 +283,28 @@ addLayer("rebirth", {
         },
         2: {
             requirementDescription: "20 RP",
-            effectDescription: "Generate 100% of Basic Points a sec",
+            effectDescription: "Keep Row 1-3 Basic Point Upgrades",
             done() { return player["rebirth"].points.gte(20) }
         },
         3: {
-            requirementDescription: "100 RP",
-            effectDescription: "Keep Row 1-3 Basic Point Upgrades",
-            done() { return player["rebirth"].points.gte(100) }
+            requirementDescription: "60 RP",
+            effectDescription: "Generate 100% of Basic Points a sec",
+            done() { return player["rebirth"].points.gte(60) }
         },
         4: {
-            requirementDescription: "2,000 RP",
-            effectDescription: "Generate 10,000% of Basic Points a sec",
-            done() { return player["rebirth"].points.gte(2000) }
+            requirementDescription: "7,000 RP",
+            effectDescription: "Keep Row 4 Basic Point Upgrades",
+            done() { return player["rebirth"].points.gte(7000) }
         },
         5: {
-            requirementDescription: "4M RP",
-            effectDescription: "Keep Row 4 Basic Point Upgrades",
-            done() { return player["rebirth"].points.gte(4000000) }
+            requirementDescription: "5M RP",
+            effectDescription: "Generate 10,000% of Basic Points a sec",
+            done() { return player["rebirth"].points.gte(5000000) }
         },
         6: {
-            requirementDescription: "RP Billionaire",
+            requirementDescription: "10B RP",
             effectDescription: "4 MOAR BP Upgrades",
-            done() { return player["rebirth"].points.gte(1000000000) }
+            done() { return player["rebirth"].points.gte(10000000000) }
         },
         7: {
             requirementDescription: "THE ELUSIVE 7TH MILESTONE [E88.88M RP]",
@@ -373,6 +403,9 @@ addLayer("rebirth", {
         if (hasMilestone('sac', 18) && hasUpgrade(this.layer, 43)) keptUpgrades.push(43);
         if (hasMilestone('sac', 18) && hasUpgrade(this.layer, 44)) keptUpgrades.push(44);
         for(i=1;i<5;i++){ //rows
+            for(v=1;v<2;v++){ //columns
+                if ((hasMilestone('prestige', 5)) && hasUpgrade(this.layer, i+v*10)) keptUpgrades.push(i+v*10)
+              }
             for(v=1;v<3;v++){ //columns
               if ((hasMilestone('prestige', 7)) && hasUpgrade(this.layer, i+v*10)) keptUpgrades.push(i+v*10)
             }
@@ -395,6 +428,8 @@ addLayer("rebirth", {
         // Stage 3, track which main features you want to keep - milestones
         let keep = [];
         if (hasMilestone('prestige', 5)) keep.push("milestones");
+        if (hasMilestone("era", 3)) keep.push("upgrades");
+        if (hasMilestone("era", 3)) keep.push("milestones");
     
         // Stage 4, do the actual data reset
         layerDataReset(this.layer, keep);
@@ -438,10 +473,10 @@ addLayer("rebirth", {
         if (hasUpgrade('rebirth', 64)) mult = mult.times("e1.11e6")
         if (hasUpgrade('basic', 91)) mult = mult.times("e999.99e3")
         if (hasUpgrade('mega', 15)) mult = mult.times("e10e6")
+        if (hasUpgrade('s', 111)) mult = mult.times("e35e9")
+        if (hasUpgrade('era', 174)) mult = mult.times("e11.11e12")
 
         // secret achievement
-        if (hasAchievement('sa', 15)) mult = mult.times(1.05)
-        if (hasAchievement('sa', 16)) mult = mult.times(1.1)
         if (hasAchievement('sa', 21)) mult = mult.times(1.1)
         if (hasAchievement('sa', 22)) mult = mult.times(1.25)
         return mult
@@ -473,6 +508,8 @@ addLayer("rebirth", {
             if (hasMilestone('e', 15)) exp = exp.add(0.15)
         }
         if (hasUpgrade('mega', 94)) exp = exp.add(0.005)
+        if (hasUpgrade('era', 183)) exp = exp.add(0.07)
+            if (hasUpgrade('m', 104)) exp = exp.add(0.04)
         if (inChallenge('m', 11)) exp = exp.mul(0.2)
         return exp
     },
@@ -507,6 +544,8 @@ addLayer("rebirth", {
         let hyprcap = 0.3
         if (hasUpgrade('rebirth', 71)) hyprcap = 0.375
         softcappedEffect = softcap(softcappedEffect, new Decimal("e200000000"), new Decimal(hyprcap))
+        let inscap = 0.2
+        softcappedEffect = softcap(softcappedEffect, new Decimal("e5e15"), new Decimal(inscap))
         return softcappedEffect
        },
         effectDescription() {
@@ -520,6 +559,9 @@ addLayer("rebirth", {
             }
             if (layerEffect.gte(new Decimal("e200000000")) ) {
                 softcapDescription = " (Hypercapped)"
+            }
+            if (layerEffect.gte(new Decimal("e5e15")) ) {
+                softcapDescription = " (Insanitycapped)"
             }
             let des = "which is boosting point fragments by x" + format(layerEffect) + softcapDescription
             return des;

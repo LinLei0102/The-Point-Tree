@@ -1,23 +1,28 @@
 
 function exponentialFormat(num, precision, mantissa = true) {
+    if (precision > 100) precision = 100
+	if (precision < 0) precision = 0
     let e = num.log10().floor()
     let m = num.div(Decimal.pow(10, e))
     if (m.toStringWithDecimalPlaces(precision) == 10) {
         m = decimalOne
         e = e.add(1)
     }
-    let elimit = new Decimal(1e9)
-    if (player.formatE == '18') elimit = 1e18
-    if (player.formatE == '15') elimit = 1e15
-    if (player.formatE == '12') elimit = 1e12
-    if (player.formatE == '6') elimit = 1e6
-    e = (e.gte(elimit) ? format(e, 3) : (e.gte(10000) ? commaFormat(e, 0) : e.toStringWithDecimalPlaces(0)))
+    let elimit = new Decimal(1e12)
+    if (player.formatE == '15') elimit = new Decimal(1e15)
+    if (player.formatE == '9') elimit = new Decimal(1e9)
+    if (player.formatE == '6') elimit = new Decimal(1e6)
+    if (player.formatE == '3') elimit = new Decimal(1e3)
+    let amtdp = player.dp
+    e = (e.gte(elimit) ? format(e, amtdp) : (e.gte(10000) ? commaFormat(e, 0) : e.toStringWithDecimalPlaces(0)))
     if (mantissa)
         return m.toStringWithDecimalPlaces(precision) + "e" + e
     else return "e" + e
 }
 
 function commaFormat(num, precision) {
+    if (precision > 100) precision = 100
+	if (precision < 0) precision = 0
     if (num === null || num === undefined) return "NaN"
     if (num.mag < 0.001) return (0).toFixed(precision)
     let init = num.toStringWithDecimalPlaces(precision)
@@ -29,6 +34,8 @@ function commaFormat(num, precision) {
 
 
 function regularFormat(num, precision) {
+    if (precision > 100) precision = 100
+	if (precision < 0) precision = 0
     if (num === null || num === undefined) return "NaN"
     if (num.mag < 0.0001) return (0).toFixed(precision)
     if (num.mag < 0.1 && precision !==0) precision = Math.max(precision, 4)
@@ -45,7 +52,9 @@ function sumValues(x) {
     return x.reduce((a, b) => Decimal.add(a, b))
 }
 
-function format(decimal, precision = 3, small) {
+function format(decimal, precision = player.dp, small) {
+    if (precision > 100) precision = 100
+	if (precision < 0) precision = 0
     small = small || modInfo.allowSmall
     decimal = new Decimal(decimal)
     if (isNaN(decimal.sign) || isNaN(decimal.layer) || isNaN(decimal.mag)) {
@@ -61,9 +70,9 @@ function format(decimal, precision = 3, small) {
     }
     else if (player.formatE == '18' && decimal.gte("1ee18")) return exponentialFormat(decimal, 0, false)
     else if (player.formatE == '15' && decimal.gte("1ee15")) return exponentialFormat(decimal, 0, false) 
-    else if (player.formatE == '12' && decimal.gte("1ee12")) return exponentialFormat(decimal, 0, false) 
+    else if (player.formatE == '9' && decimal.gte("1ee9")) return exponentialFormat(decimal, 0, false) 
     else if (player.formatE == '6' && decimal.gte("1ee6")) return exponentialFormat(decimal, 0, false) 
-    else if (decimal.gte("1ee9")) return exponentialFormat(decimal, 0, false)
+    else if (decimal.gte("1ee12")) return exponentialFormat(decimal, 0, false)
     else if (decimal.gte("1e10000")) return exponentialFormat(decimal, 0)
     else if (decimal.gte(1e12)) return exponentialFormat(decimal, (precision + 2))
     else if (decimal.gte(1e3)) return commaFormat(decimal, 0)
@@ -83,8 +92,9 @@ function format(decimal, precision = 3, small) {
 
 function formatWhole(decimal) {
     decimal = new Decimal(decimal)
-    if (decimal.gte(1e12)) return format(decimal, 2)
-    if (decimal.lte(0.99) && !decimal.eq(0)) return format(decimal, 2)
+    let amtdp = player.dp
+    if (decimal.gte(1e12)) return format(decimal, amtdp)
+    if (decimal.lte(0.99) && !decimal.eq(0)) return format(decimal, amtdp)
     return format(decimal, 0)
 }
 
@@ -93,11 +103,12 @@ function formatTime(s) {
     else if (s < 3600) return formatWhole(Math.floor(s / 60)) + "m " + format(s % 60) + "s"
     else if (s < 86400) return formatWhole(Math.floor(s / 3600)) + "h " + formatWhole(Math.floor(s / 60) % 60) + "m " + format(s % 60) + "s"
     else if (s < 31536000) return formatWhole(Math.floor(s / 86400) % 365) + "d " + formatWhole(Math.floor(s / 3600) % 24) + "h " + formatWhole(Math.floor(s / 60) % 60) + "m " + format(s % 60) + "s"
-    else if (s < 3153600000) return formatWhole(Math.floor(s / 31536000)) + "y " + formatWhole(Math.floor(s / 86400) % 365) + "d " + formatWhole(Math.floor(s / 3600) % 24) + "h " + formatWhole(Math.floor(s / 60) % 60) + "m " + format(s % 60) + "s"
-    else return formatWhole(Math.floor(s / 3153600000)) + " centuries " + formatWhole(Math.floor(s / 31536000) % 100) + "y " + formatWhole(Math.floor(s / 86400) % 365) + "d " + formatWhole(Math.floor(s / 3600) % 24) + "h " + formatWhole(Math.floor(s / 60) % 60) + "m " + format(s % 60) + "s"
+    else return formatWhole(Math.floor(s / 31536000)) + "yrs " + formatWhole(Math.floor(s / 86400) % 365) + "d " + formatWhole(Math.floor(s / 3600) % 24) + "h " + formatWhole(Math.floor(s / 60) % 60) + "m " + format(s % 60) + "s"
 }
 
 function toPlaces(x, precision, maxAccepted) {
+    if (precision > 100) precision = 100
+	if (precision < 0) precision = 0
     x = new Decimal(x)
     let result = x.toStringWithDecimalPlaces(precision)
     if (new Decimal(result).gte(maxAccepted)) {
