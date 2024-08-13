@@ -13,24 +13,36 @@ function getStartOptions() {
 		forceOneTab: false,
 		oldStyle: false,
 		tooltipForcing: true,
-		formatE: '12',
-		dp: 3,
+		formatE: '3',
+		dp: 8,
 		showdp: 5,
 		theme: "default",
+		notation: "default",
 	}
 }
-let formatEList = ['3','6','9','12','15']
-let dpList = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+let formatEList = ['12','15','3','6','9']
 
 function changeEFormat() {
-	player.formatE = formatEList[(formatEList.indexOf(player.formatE) + 1) % formatEList.length]
+	let index = formatEList.indexOf(options.formatE)
+	if (options.formatE === null || index >= formatEList.length-1 || index < 0) {
+		options.formatE = formatEList[0];
+	}
+	else {
+		index ++;
+		options.formatE = formatEList[index];
+	}
 }
 
-function changeDP() {
-	player.dp = dpList[(dpList.indexOf(player.dp) + 1) % dpList.length]
-	player.showdp = (player.dp) + 2
-	if (player.dp > 100) player.dp = 20
-	if (player.dp < 0) player.dp = 0
+function changeNotation() {
+	if (options.notation === 'default') { 
+		options.notation = 'infinity'
+	} else if (options.notation === 'infinity'){ 
+		options.notation = 'default'
+	}
+}
+
+function getNotationName() {
+	return options.notation
 }
 
 

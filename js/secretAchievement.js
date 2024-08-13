@@ -64,23 +64,23 @@ addLayer("sa", {
         13: {
             name: "I hate long numbers!",
             done() {
-                 if(player.formatE == "3") {
+                 if(options.formatE == "3") {
                     return true
                  }
                 },
             tooltip() {
                 if (hasAchievement('sa', 13)) {
-                    return "Make formatE 6"
+                    return "Make formatE 3"
                 }
                 else {
-                    return "Lower than e1,000,000"
+                    return "Lower than e1,000"
                 }
             },
         },
         14: {
             name: "I love long numbers!!",
             done() {
-                if(player.formatE == "15") {
+                if(options.formatE == "15") {
                    return true
                 }
                },
@@ -94,34 +94,34 @@ addLayer("sa", {
            },
         },
         15: {
-            name: "a challenge",
+            name: "Infinite possibilities",
             done() {
-                if(player.dp = -1) {
+                if(options.notation == 'infinity') {
                    return true
                 }
                },
            tooltip() {
                if (hasAchievement('sa', 15)) {
-                   return "Make dp (showdp) 1"
+                   return "Infinite Notation"
                }
                else {
-                   return "e1.1e111"
+                   return "Antimatter Dimensions"
                }
            },
         },
         16: {
-            name: "Best combo ever",
+            name: "Verdantly beautiful",
             done() {
-                 if((player.dp = 12) && (player.formatE = "3")) {
+                 if(options.theme == "verdant") {
                     return true
                  }
                 },
             tooltip() {
                 if (hasAchievement('sa', 16)) {
-                    return "showdp 14 and formatE 3"
+                    return "Switch to Verdant theme"
                 }
                 else {
-                    return "e8.284927582940e3 Sacrifices"
+                    return "Trees."
                 }
             },
         },
@@ -358,7 +358,9 @@ addLayer("sa", {
             name: "Reach the leet number",
             done() {
                    if (player.sa.minigameNum.eq(1337)) {
-                       return true
+                        if (hasAchievement("sa", 111)) {
+                            return true
+                        }
                    }
                },
             tooltip() {
@@ -377,7 +379,9 @@ addLayer("sa", {
             name: "Reach the very nice number",
             done() {
                    if (player.sa.minigameNum.eq(69420)) {
-                       return true
+                    if (hasAchievement("sa", 112)) {
+                        return true
+                    }
                    }
                },
             tooltip() {
@@ -396,7 +400,9 @@ addLayer("sa", {
             name: "Reach the Dragon Ball Z number",
             done() {
                    if (player.sa.minigameNum.eq(9001)) {
-                       return true
+                    if (hasAchievement("sa", 113)) {
+                        return true
+                    }
                    }
                },
             tooltip() {
@@ -415,7 +421,9 @@ addLayer("sa", {
             name: "Reach the Insanity Number (10^69)",
             done() {
                    if (player.sa.minigameNum.eq(1e69)) {
-                       return true
+                    if (hasAchievement("sa", 114)) {
+                        return true
+                    }
                    }
                },
             tooltip() {
@@ -434,7 +442,9 @@ addLayer("sa", {
             name: "Reach the ULTIMATE LEET Number",
             done() {
                    if ((player.sa.minigameNum.gte("9.99e1336")) && (player.sa.minigameNum.lte("1.01e1337"))) {
-                       return true
+                    if (hasAchievement("sa", 115)) {
+                        return true
+                    }
                    }
                },
             tooltip() {
@@ -580,7 +590,9 @@ addLayer("sa", {
             name: "Reach 0.134765625",
             done() {
                    if (player.sa.minigameNum.eq(0.134765625)) {
-                       return true
+                    if (hasAchievement("sa", 131)) {
+                        return true
+                    }
                    }
                },
             tooltip() {
@@ -599,7 +611,9 @@ addLayer("sa", {
             name: "Reach 446.34375",
             done() {
                    if (player.sa.minigameNum.eq(446.34375)) {
-                       return true
+                    if (hasAchievement("sa", 132)) {
+                        return true
+                    }
                    }
                },
             tooltip() {
@@ -618,7 +632,9 @@ addLayer("sa", {
             name: "Reach 3.74897119 [some buffer] {When all previous achievements are done, Unlock The LAST HARD ACHIEVEMENT.}",
             done() {
                 if ((player.sa.minigameNum.gte(3.74897)) && (player.sa.minigameNum.lte(3.748972))) {
-                    return true
+                    if (hasAchievement("sa", 133)) {
+                        return true
+                    }
                 }
                },
             tooltip() {
@@ -637,7 +653,9 @@ addLayer("sa", {
             name: "Reach 1e-200 and lower.",
             done() {
                 if (player.sa.minigameNum.lte(1e-200)) {
-                    return true
+                    if(hasAchievement("sa", 134) && hasAchievement("sa", 126) && hasAchievement("sa", 116)) {
+                        return true
+                    }
                 }
                },
             tooltip() {
@@ -656,7 +674,9 @@ addLayer("sa", {
             name: "Reach 3.029679879579 [some buffer] (Extreme 01/07)",
             done() {
                 if ((player.sa.minigameNum.gte(3.02967987)) && (player.sa.minigameNum.lte(3.02967988))) {
-                    return true
+                    if (hasAchievement("sa", 146)) {
+                        return true
+                    }
                 }
                },
             tooltip() {
@@ -675,7 +695,9 @@ addLayer("sa", {
             name: "Even higher (e1M)",
             done() {
                    if (player.sa.minigameNum.gte("ee6")) {
-                       return true
+                    if (hasAchievement("sa", 135)) {
+                        return true
+                    }
                    }
                },
             tooltip() {
@@ -694,7 +716,9 @@ addLayer("sa", {
             name: "Even higher (e1B)",
             done() {
                    if (player.sa.minigameNum.gte("ee9")) {
-                       return true
+                    if (hasAchievement("sa", 141)) {
+                        return true
+                    }
                    }
                },
             tooltip() {
@@ -713,7 +737,9 @@ addLayer("sa", {
             name: "Even higher (e1 Qt)",
             done() {
                    if (player.sa.minigameNum.gte("ee18")) {
-                       return true
+                    if (hasAchievement("sa", 142)) {
+                        return true
+                    }
                    }
                },
             tooltip() {
@@ -732,7 +758,9 @@ addLayer("sa", {
             name: "Even higher (ee75)",
             done() {
                    if (player.sa.minigameNum.gte("ee75")) {
-                       return true
+                    if (hasAchievement("sa", 143)) {
+                        return true
+                    }
                    }
                },
             tooltip() {
@@ -751,7 +779,9 @@ addLayer("sa", {
             name: "Even higher (ee200)",
             done() {
                    if (player.sa.minigameNum.gte("ee200")) {
-                       return true
+                    if (hasAchievement("sa", 144)) {
+                        return true
+                    }
                    }
                },
             tooltip() {
@@ -770,7 +800,9 @@ addLayer("sa", {
             name: "LAST ACHIEVEMENT WOW FOR MINIGAME (EE500)",
             done() {
                    if (player.sa.minigameNum.gte("ee500")) {
-                       return true
+                    if (hasAchievement("sa", 145)) {
+                        return true
+                    }
                    }
                },
             tooltip() {
@@ -789,7 +821,9 @@ addLayer("sa", {
             name: "Reach 8.856444797045 [some buffer] (Extreme 02/07)",
             done() {
                 if ((player.sa.minigameNum.gte(8.8564447970)) && (player.sa.minigameNum.lte(8.8564447971))) {
-                    return true
+                    if (hasAchievement("sa", 136)) {
+                        return true
+                    }
                 }
                },
             tooltip() {
@@ -808,7 +842,9 @@ addLayer("sa", {
             name: "Reach pi (wait what, pi??) yes, to 15 digits [3.14159265358979] (Extreme 03/07)",
             done() {
                 if ((player.sa.minigameNum.gte(3.14159265358979)) && (player.sa.minigameNum.lte(3.1415926535898))) {
-                    return true
+                    if (hasAchievement("sa", 151)) {
+                        return true
+                    }
                 }
                },
             tooltip() {
@@ -816,7 +852,7 @@ addLayer("sa", {
                     return "nicely done [Extreme 03] Unlock pdx value show up"
                 }
                 else {
-                    return "Hint: 1 button, then press and hold a button"
+                    return "Hint: Only need 2 unique buttons!"
                 }
             },
             unlocked() { 
@@ -827,7 +863,9 @@ addLayer("sa", {
             name: "Get less than 1.0000000001, and more than 1.000000000001, without using more than 3 pdx.",
             done() {
                 if ((player.sa.minigameNum.lte(1.0000000001)) && (player.sa.minigameNum.gte(1.000000000001)) && (player.sa.pdx.lte(3))) {
-                    return true
+                    if (hasAchievement("sa", 152)) {
+                        return true
+                    }
                 }
                },
             tooltip() {
@@ -848,7 +886,9 @@ addLayer("sa", {
                 let MNL = player.sa.minigameNum.layer
                 let MNM = player.sa.minigameNum.mag
                 if ((MNL >= 2) && (MNM < -20)) {
-                    return true
+                    if (hasAchievement("sa", 153)) {
+                        return true
+                    }
                 }
                },
             tooltip() {
@@ -856,7 +896,7 @@ addLayer("sa", {
                     return "nicely done [Extreme 05] Unlock ^10 button :)"
                 }
                 else {
-                    return "Hint: 1 button, then press and hold a button"
+                    return "might take a while"
                 }
             },
             unlocked() { 
@@ -867,7 +907,9 @@ addLayer("sa", {
             name: "Astronomical (ee70k)",
             done() {
                    if (player.sa.minigameNum.gte("ee70000")) {
-                       return true
+                    if (hasAchievement("sa", 154)) {
+                        return true
+                    }
                    }
                },
             tooltip() {
@@ -883,10 +925,12 @@ addLayer("sa", {
             }
         },
         156: {
-            name: "UTTER INSANITY (ee1.25M)",
+            name: "UTTER INSANITY (ee1.5M)",
             done() {
-                   if (player.sa.minigameNum.gte("ee1.25e6")) {
-                       return true
+                   if (player.sa.minigameNum.gte("ee1.5e6")) {
+                    if (hasAchievement("sa", 155)) {
+                        return true
+                    }
                    }
                },
             tooltip() {
@@ -905,27 +949,37 @@ addLayer("sa", {
     clickables: {
         11: {
             title(){
-                title = minigameFormat(player[this.layer].minigameNum)
+                title = notationChooserMinigame(player[this.layer].minigameNum)
                 return title
             },
             display() { dis = ""
                 if (player.sa.minigameNum.eq(0)) dis = "how"
                 if (player.sa.minigameNum.lt(0)) dis = "below negative?"
+                if ((player.sa.minigameNum.gte(1.61803)) && (player.sa.minigameNum.lte(1.61804))) dis = "The Golden Ratio"
+                if ((player.sa.minigameNum.gte(2.71828)) && (player.sa.minigameNum.lte(2.71829))) dis = "e"
+                if ((player.sa.minigameNum.gte(3.14159)) && (player.sa.minigameNum.lte(3.1416))) dis = "pi"
                 if (player.sa.minigameNum.eq(69)) dis = "nice"
+                if (player.sa.minigameNum.eq(404)) dis = "404 ERROR"
                 if (player.sa.minigameNum.eq(420)) dis = "not funny"
+                if (player.sa.minigameNum.eq(666)) dis = "devil"
+                if (player.sa.minigameNum.eq(777)) dis = "lucky"
+                if (player.sa.minigameNum.eq(911)) dis = "what's your emergency?"
+                if (player.sa.minigameNum.eq(1337)) dis = "leet"
                 if (player.sa.minigameNum.eq(69420)) dis = "very nice"
+                if (player.sa.minigameNum.eq(9223372036854775807)) dis = "if you know, you know."
                 if (player.sa.minigameNum.gte("1e100")) dis = "Breaking bounds"
                 if (player.sa.minigameNum.gte("1e10000")) dis = "Order of Exponentiating Magnitude"
                 if (player.sa.minigameNum.gte("ee6")) dis = "Impressive."
                 if (player.sa.minigameNum.gte("ee10")) dis = "Hyperion"
                 if (player.sa.minigameNum.gte("ee15")) dis = "Insanity"
+                if (player.sa.minigameNum.gte("e5.011135425235e19")) dis = "Past the Endgame"
                 if (player.sa.minigameNum.gte("ee100")) dis = "Transcending"
                 if (player.sa.minigameNum.gte("ee500")) dis = "Omega"
                 if (player.sa.minigameNum.gte("ee2000")) dis = "Infinite"
                 if (player.sa.minigameNum.gte("ee25000")) dis = "Èternal"
                 if (player.sa.minigameNum.gte("ee150000")) dis = "Infinite Eternal"
                 if (player.sa.minigameNum.gte("eee6")) dis = "Utter Infinite Eternal"
-                if (player.sa.minigameNum.gte("ee2e7")) dis = "oNlY 1% oF pEoPlE cAn gEt ThIs!"
+                if (player.sa.minigameNum.gte("eee7")) dis = "oNlY 1% oF pEoPlE cAn gEt ThIs!"
                 if (player.sa.minigameNum.gte("eee8")) dis = "True No-Life"
                 if (player.sa.minigameNum.gte("eee9")) dis = "Absolute True No-Life"
                 if (player.sa.minigameNum.gte("ee4e9")) dis = "Another 5 more to go!"
@@ -940,7 +994,7 @@ addLayer("sa", {
         },
         12: {
             title(){
-                title = formatWhole(player[this.layer].pdx) + " pdx"
+                title = notationChooser(player[this.layer].pdx) + " pdx"
                 return title
             },
             display() { 
