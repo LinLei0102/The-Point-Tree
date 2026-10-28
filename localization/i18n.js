@@ -25,10 +25,15 @@
     var LS_KEY = "pointtree_i18n_lang";
     var lang = "zh-CN";
     try { lang = localStorage.getItem(LS_KEY) || "zh-CN"; } catch (e) { /* ignore */ }
-    // URL 参数 ?lang=en / ?lang=zh-CN：便于分享与临时切换（优先于 localStorage）
+    // URL 参数 ?lang=en / ?lang=zh-CN：便于分享与临时切换。
+    // 规则：URL 参数**只在本地还没存过语言时**才作为初始值生效，
+    // 一旦用户手动切换过（localStorage 有值），就以后者为准 ——
+    // 否则带 ?lang=xx 的链接会把用户的切换弹回去。
     try {
         var qm = /[?&]lang=(en|zh-CN)/.exec(location.search);
-        if (qm) { lang = qm[1]; localStorage.setItem(LS_KEY, lang); }
+        var stored = null;
+        try { stored = localStorage.getItem(LS_KEY); } catch (e) { /* ignore */ }
+        if (qm && !stored) { lang = qm[1]; localStorage.setItem(LS_KEY, lang); }
     } catch (e) { /* ignore */ }
 
     var DICTS = window.PT_I18N || {};
@@ -448,7 +453,7 @@
             // 语言切换按钮：设置页没有可挂载的容器 id，只能改模板末尾的 </table>
             ["</table>",
                 "<tr><td colspan=\"3\"><button class=\"opt\" onclick=\"PTI18N.toggle()\">" +
-                "<span>语言：中文（点此切换 English）</span></button></td></tr></table>"]
+                "<span>{{ $ptLang() }}</span></button></td></tr></table>"]
         ],
         "info-tab": [
             ["Made by ", "作者："],
@@ -482,11 +487,10 @@
 
     function patchTemplate(name, tpl) {
         var rules = TEMPLATE_PATCH[name];
-        if (tpl.indexOf("%LANG%") >= 0) {
-            tpl = tpl.split("%LANG%").join(ENABLED ? "语言：中文（点此切换 English）" : "Language: English (click for 中文)");
-        }
         if (rules) {
             for (var i = 0; i < rules.length; i++) {
+                // 英文模式下跳过文案翻译类补丁，只保留「结构类」补丁（语言按钮注入）
+                if (!ENABLED && rules[i][0] !== "</table>") continue;
                 tpl = tpl.split(rules[i][0]).join(rules[i][1]);
             }
         }
@@ -497,9 +501,16 @@
         var origComponent = window.Vue.component;
         window.Vue.component = function (name, options) {
             // 注意：Vue.component(name) 也是取值方式，此时 options 为 undefined
-            if (typeof name === "string" && options && typeof options.template === "string" && ENABLED) {
-                try { options.template = patchTemplate(name, options.template); }
-                catch (e) { console.warn("[PTI18N] template patch '" + name + "' failed", e); }
+            if (typeof name === "string" && options && typeof options.template === "string") {
+                // 语言按钮必须**无条件**注入（英文模式下也要有，否则切到英文就找不回入口）；
+                // 其余汉化补丁只在中文模式下生效。
+                if (name === "options-tab") {
+                    try { options.template = patchTemplate(name, options.template); }
+                    catch (e) { console.warn("[PTI18N] template patch '" + name + "' failed", e); }
+                } else if (ENABLED) {
+                    try { options.template = patchTemplate(name, options.template); }
+                    catch (e) { console.warn("[PTI18N] template patch '" + name + "' failed", e); }
+                }
             }
             return origComponent.apply(this, arguments);
         };
@@ -508,6 +519,12 @@
     // Vue 模板里可直接调用的翻译助手：设置页那些「值型插值」
     // （{{ getActionMode() }} 等）用它走整串词典，避免去改选项 id
     if (window.Vue && window.Vue.prototype) window.Vue.prototype.$pt = translate;
+    // 语言按钮文字：随当前语言动态显示
+    if (window.Vue && window.Vue.prototype) {
+        window.Vue.prototype.$ptLang = function () {
+            return ENABLED ? "语言：中文（点此切换 English）" : "Language: English (click for 中文)";
+        };
+    }
 
     // ------------------------------------------------------------------
     // 9. 兜底：DOM 文本节点观察器
@@ -580,27 +597,6 @@
         location.reload();
     }
 
-    // 给设置页注入语言按钮（挂到 #options-tab 的 table 后面）
-    function injectLanguageButton() {
-        try {
-            var tab = document.getElementById("options-tab");
-            if (!tab || tab.__ptLang) return;
-            var tbl = tab.querySelector("table");
-            if (!tbl) return;
-            tab.__ptLang = 1;
-            var row = document.createElement("tr");
-            var td = document.createElement("td");
-            td.setAttribute("colspan", "3");
-            var btn = document.createElement("button");
-            btn.className = "opt";
-            btn.textContent = lang === "zh-CN" ? "语言：中文（点击切换为 English）" : "Language: English (click for 中文)";
-            btn.onclick = function () { setLanguage(lang === "zh-CN" ? "en" : "zh-CN"); };
-            td.appendChild(btn);
-            row.appendChild(td);
-            tbl.querySelector("tbody") ? tbl.querySelector("tbody").appendChild(row) : tbl.appendChild(row);
-        } catch (e) { /* ignore */ }
-    }
-
     // ------------------------------------------------------------------
     // 11. 启动
     // ------------------------------------------------------------------
@@ -632,8 +628,8 @@
         // 但内容由页面决定，所以可以本地化 —— 在游戏加载完成后接管一次。
         applyTitle();
         startDomHook();
-        injectLanguageButton();
-        setInterval(function () { hookRuntime(); injectLanguageButton(); applyTitle(); }, 500);
+        applyTitle();
+        setInterval(function () { hookRuntime(); applyTitle(); }, 500);
     }
 
     if (document.readyState === "loading") {
