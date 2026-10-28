@@ -108,23 +108,22 @@
     function idShape(s) {
         return /^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)+$/.test(s);
     }
-    function stripPunctDash(s) {
-        return s.replace(/^\s*-\s+/, "").replace(/\s+-\s?/g, " ");
-    }
-    // 「id 形态但其实是显示名」白名单：该 token 出现在某条词典 key 里，
-    //   ① 该 key 的译文完全译出（剥掉标签/标点短横线后不含 '-'），或
-    //   ② 译文里原样保留了该 token（有意保留英文的术语）
+    // 「id 形态但其实是显示名」白名单：该 token 出现在某条**有实际翻译**的词典 key 里。
+    //   只要一条 key 被译成了中文（译文 ≠ 原文），key 里出现的 id 形态 token 都是
+    //   「待翻译的显示文本」——无论译文最终是译成中文（如 Time-bound→时间束缚）
+    //   还是有意保留英文（如 Discord 等专名），都不该被 ID_SCAN 掩码。
+    //   否则，像「细菌 2 - 时间束缚」这种译文标题里带短横线的 key，会因整条译文
+    //   含 '-' 而被误判，导致 key 里的 Time-bound / Reset-75 等 token 被掩码，
+    //   进而破坏长 fragment 键的整段匹配（细菌技能树因此残留英文）。
     var ID_SAFE = (function () {
         var safe = {};
         function harvest(k, v) {
             if (typeof v !== "string") return;
-            var clean = v.replace(/<[^>]*>/g, "");
+            if (v === k) return;                 // 未翻译（译文=原文）的 key 不作为白名单依据
             var m = String(k).match(ID_SCAN);
             if (!m) return;
-            var cleanOk = stripPunctDash(clean).indexOf("-") < 0;
             for (var i = 0; i < m.length; i++) {
-                var tok = m[i];
-                if (cleanOk || clean.indexOf(tok) >= 0) safe[tok] = 1;
+                safe[m[i]] = 1;
             }
         }
         for (var k in exact) harvest(k, exact[k]);
@@ -144,6 +143,10 @@
 
     function translate(str) {
         if (!ENABLED || typeof str !== "string" || str.length < 2) return str;
+        // 换行符规范化：源码文件在 Windows 上常是 CRLF，但 JS 引擎解析
+        // 模板字符串时会把 \r\n 规范成 \n，导致「词典键(CRLF)」与
+        // 「运行时字符串(LF)」对不上。这里统一成 \n 再匹配。
+        if (str.indexOf("\r") >= 0) str = str.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
         if (SPECIAL[str] !== undefined) return SPECIAL[str];
         if (/^[A-Za-z0-9]$/.test(str)) return str;
         if (OUTPUTS[str] === 1) return str;                 // 已是译文，幂等返回
