@@ -349,6 +349,26 @@
     }
 
     // ------------------------------------------------------------------
+    // 7.5 Hook: alert() / confirm() / prompt() —— 浏览器原生对话框
+    //    对话框由浏览器绘制，但**正文文本是页面传进去的**，所以可以翻译；
+    //    对话框上的「确定 / 取消」按钮属于浏览器界面，跟随浏览器语言，页面无法改。
+    //    prompt 的第二个参数（默认输入值，如重置确认口令）是代码用的字面量，不译。
+    // ------------------------------------------------------------------
+    function hookDialogs() {
+        ["alert", "confirm", "prompt"].forEach(function (name) {
+            var orig = window[name];
+            if (typeof orig !== "function" || orig.__ptHooked) return;
+            var wrapped = function (msg) {
+                var args = Array.prototype.slice.call(arguments);
+                if (typeof args[0] === "string") args[0] = translate(args[0]);
+                return orig.apply(window, args);
+            };
+            wrapped.__ptHooked = true;
+            window[name] = wrapped;
+        });
+    }
+
+    // ------------------------------------------------------------------
     // 8. Hook: Vue.component —— 模板定点补丁
     //    组件模板里的静态英文不经过任何会返回字符串的函数，只能改模板字面量。
     //    注意：只替换「模板里的纯文本段」，不碰 {{ }} 与 v-bind 表达式。
@@ -576,11 +596,24 @@
         }
     };
 
+    // 接管标签页标题（游戏在 utils.js 里会把它设成英文 modInfo.name）
+    function applyTitle() {
+        try {
+            var want = ENABLED ? "点数树 The Point Tree" : "The Point Tree";
+            if (document.title !== want) document.title = want;
+        } catch (e) { /* ignore */ }
+    }
+
     function boot() {
         hookRuntime();
+        hookDialogs();
+        // 标签页标题：原版 index.html 没有 <title>，且 js/utils.js:343 会写
+        // `document.title = modInfo.name`（纯英文）。标题属于浏览器窗体文字，
+        // 但内容由页面决定，所以可以本地化 —— 在游戏加载完成后接管一次。
+        applyTitle();
         startDomHook();
         injectLanguageButton();
-        setInterval(function () { hookRuntime(); injectLanguageButton(); }, 500);
+        setInterval(function () { hookRuntime(); injectLanguageButton(); applyTitle(); }, 500);
     }
 
     if (document.readyState === "loading") {
@@ -591,4 +624,5 @@
     // run()/doPopup() 在 utils.js 之后才定义，这里补一次
     setTimeout(hookRuntime, 0);
     setTimeout(hookRuntime, 200);
+    hookDialogs();
 })();

@@ -10,7 +10,16 @@
 | 文件 | 作用 |
 |---|---|
 | `zh_CN.js` | 词典：`window.PT_I18N = { "zh-CN": { exact: {…}, fragment: {…} } }`，共 **3,256** 条（exact 2,978 + fragment 278） |
-| `i18n.js` | 翻译引擎：包装 `addLayer` / `run` / `gridRun` / `doPopup` / `Vue.component`，并用 `MutationObserver` 兜底 |
+| `i18n.js` | 翻译引擎：包装 `addLayer` / `run` / `gridRun` / `doPopup` / `alert`·`confirm`·`prompt` / `Vue.component`，并用 `MutationObserver` 兜底，同时接管标签页标题 |
+
+### 哪些「浏览器窗体里的字」能汉化
+
+| 位置 | 能否汉化 | 原因 |
+|---|---|---|
+| `alert` / `confirm` / `prompt` 的正文 | ✅ 可以 | 文字由页面传入，引擎包装这三个函数即可 |
+| 浏览器标签页标题 | ✅ 可以 | `document.title` 由页面控制 |
+| 对话框上的「确定 / 取消」按钮 | ❌ 不行 | 浏览器自带 UI，跟随浏览器界面语言 |
+| 地址栏、右键菜单、另存为、打印、「离开此网站？」提示 | ❌ 不行 | 全部由浏览器绘制，网页无权修改；想让它们变中文只能改浏览器语言设置 |
 
 ## 接入方式
 
@@ -33,10 +42,18 @@
    `tooltip` / `body` / `resource` / `respecText` …）；函数型字段包一层，**求值后**翻译返回值。
    `tabFormat` / `midsection` / `microtabs` 的数组载荷按「文本型组件」逐个翻译。
 2. **渲染期**：包装 `run()` / `gridRun()`（所有 `v-html` 文本都经它们）、`doPopup()`（弹窗标题与正文）。
-3. **模板补丁**：组件模板里的静态英文（`Cost:`、`Goal:`、设置页按钮、信息页致谢等）
+3. **浏览器原生对话框**：包装 `alert()` / `confirm()` / `prompt()`。
+   对话框是浏览器画的，但**正文是页面传进去的字符串**，所以可以翻译
+   （如进入小游戏时的 `Your current progress will not be saved!` → 「你当前的进度不会被保存！」）。
+   对话框上的「确定 / 取消」按钮属于浏览器界面，跟随浏览器语言，页面无法改。
+   `prompt()` 的第二个参数（默认输入值）和需要玩家原样输入的口令
+   （`I WANT TO RESET THIS`）保持英文 —— 否则代码里的字面量比对会失败。
+4. **标签页标题**：`js/utils.js:343` 会写 `document.title = modInfo.name`（纯英文），
+   引擎在加载完成后接管为「点数树 The Point Tree」。
+5. **模板补丁**：组件模板里的静态英文（`Cost:`、`Goal:`、设置页按钮、信息页致谢等）
    不经过任何会返回字符串的函数，只能在 `Vue.component()` 注册前改模板字面量。
-4. **兜底**：`MutationObserver` 监听 DOM 文本节点，处理 `index.html` 静态文案与运行期拼出的串。
-5. **匹配**：所有词条按长度降序合成**一条正则**一次替换；纯字母键自动加 `\b` 边界。
+6. **兜底**：`MutationObserver` 监听 DOM 文本节点，处理 `index.html` 静态文案与运行期拼出的串。
+7. **匹配**：所有词条按长度降序合成**一条正则**一次替换；纯字母键自动加 `\b` 边界。
 
 ### exact 与 fragment
 
