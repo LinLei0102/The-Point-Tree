@@ -154,10 +154,17 @@
         var out;
         if (Object.prototype.hasOwnProperty.call(exact, str)) {
             var ev = exact[str];
-            out = (idShape(str) && typeof ev === "string" && ev.indexOf("-") >= 0) ? str : ev;
-        } else if (PROTECTED[str] === 1) {
+            // 只有「原文是 id 形态、译文也仍是 id 形态」才认为这条词典没有真正翻译
+            //（例如 foo-bar → foo-bar），保留原文以免误伤代码标识符。
+            // 若译文已中文化（如 Transcending-Dimensional → 超越-维度），即使译文里
+            // 带短横线也应当使用译文——否则像 Supra-Eternity、Supra-Reality 这类
+            // 成就名会永远显示英文。
+            out = (idShape(str) && typeof ev === "string" && idShape(ev)) ? str : ev;
+        } else if (PROTECTED[str] === 1 || PROTECTED[str.replace(/^\s+|\s+$/g, "")] === 1) {
             // 模板补丁的产物（如「The Prestige Tree 由 Jacorb 与 Aarex 制作」）：
-            // 里面的英文专名不能再被子串词条改写
+            // 里面的英文专名不能再被子串词条改写。
+            // 注意：Vue 编译后的文本节点常带首尾空白/换行，需用 trim 后的形态再查一次，
+            // 否则「The Prestige Tree」会被 "Prestige" 子串规则误译成「The 威望 Tree」。
             out = str;
         } else {
             var guards = [];
@@ -448,6 +455,7 @@
             ["Completed Challenges: ", "已完成挑战："],
             ["Single-Tab Mode: ", "单标签模式："],
             ["Shift-Click to Toggle Tooltips: ", "Shift+点击切换提示框："],
+            ["Sound Effect: ", "音效： "],
             ["Notation: ", "记数法："],
             ["Show Milestone Popups: ", "显示里程碑弹窗："],
             ["?\"ON\":\"OFF\"", "?\"开\":\"关\""],
@@ -473,6 +481,7 @@
             ["Some beta testers", "以及各位参与测试的玩家"],
             ["Infinity Notation by unicodes", "无限记数法：unicodes"],
             ["Main Point Tree server", "点数树主服务器"],
+            ["The Point Tree Discord", "点数树 Discord"],
             ["Incremental Games Plaza Account", "Incremental Games Plaza 账号"]
         ]
     };
