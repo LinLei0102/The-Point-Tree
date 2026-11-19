@@ -217,6 +217,130 @@
         return out;
     }
 
+    // ------------------------------------------------------------------
+    // 3.4 数字跟随记数法
+    //     词典是静态的，译文里的数字按源码写法抄下来（1.25M、ee10、3750）；
+    //     但英语原文在渲染前会被 notationChooserText() 改写成当前记数法下的
+    //     写法（1,250,000、e1e10、3,750）。这里按「数值相同」把原文的实际写法
+    //     搬进译文，玩家切到缩写 / 科学记数法时译文也跟着变。
+    //     按数值配对而不是按下标，译文里数字顺序与原文不同（如「含 13 项 MC3-EX
+    //     共 63 项」）也不会张冠李戴；标识符里的数字（ErUp 4a、MC1、SU94）不动。
+    // ------------------------------------------------------------------
+    var NUM_SUFFIX = "(?:QaVg|QiVg|SxVg|SpVg|OcVg|NoVg|Qad|Qid|Sxd|Spd|Ocd|Nod|Qd|Qn|Qa|Qi|Sx|Sp|Oc|No|De|Ud|Dd|Td|UVg|DVg|TVg|Vg|[KMBT])";
+    // 与游戏 notationChooserText 的匹配规则保持一致（连 lookbehind 都一样），
+    // 否则 "x1.05" 这类数字会被漏掉、导致错位
+    var NUM_RE = new RegExp("(?<![A-WYZa-wyz0-9.])(?:e{1,2}[+-]?[\\d,]+(?:\\.\\d+)?|\\d[\\d,]*(?:\\.\\d+)?)(?:e{1,2}[+-]?[\\d,]+(?:\\.\\d+)?)*(?:\\s*" + NUM_SUFFIX + "(?![A-Za-z]))?", "g");
+
+    function numSpans(s) {
+        // HTML 标签里的数字（样式、颜色、id）不能动：先把标签抹成等长空格
+        var masked = s.replace(/<[^>]*>/g, function (m) { return m.replace(/[^\n]/g, " "); });
+        var out = [], m;
+        NUM_RE.lastIndex = 0;
+        while ((m = NUM_RE.exec(masked))) {
+            if (!/[0-9]/.test(m[0])) continue;
+            var at = m.index, len = m[0].length;
+            out.push({ at: at, len: len, text: s.substr(at, len) });
+        }
+        return out;
+    }
+
+    var SUFFIX_POW = { K: 3, M: 6, B: 9, T: 12, Qd: 15, Qa: 15, Qi: 18, Qn: 18, Sx: 21, Sp: 24, Oc: 27, No: 30, De: 33, Ud: 36, Dd: 39, Td: 42 };
+
+    // "1.25M" / "1,250,000" / "3750" → 同一个数
+    function plainValue(s) {
+        if (!/^\d[\d,]*(?:\.\d+)?$/.test(s)) return null;
+        return parseFloat(s.replace(/,/g, ""));
+    }
+
+    // "e5e5" / "ee10" / "e2.98e22" → log10(值)。只用来判断「两个写法是不是同一个数」，
+    // 溢出成 Infinity 也无所谓（两个都溢出就算相等）。
+    function eLog10(s) {
+        var lead = 0;
+        while (s.charAt(0) === "e") { lead++; s = s.slice(1); }
+        if (!lead) return null;
+        var v = s.match(/^(\d[\d,]*(?:\.\d+)?)(?:e([+-]?\d[\d,]*(?:\.\d+)?))?$/);
+        if (!v) return null;
+        var base = parseFloat(v[1].replace(/,/g, ""));
+        if (v[2] !== undefined) base = base * Math.pow(10, parseFloat(v[2].replace(/,/g, "")));
+        if (!(base > 0)) return null;
+        var lg = Math.log10(base);
+        for (var i = 0; i < lead; i++) lg = Math.pow(10, lg);
+        return lg;
+    }
+
+    // 返回 { k: 类型, v: 数值 }，两种类型（普通数值 / e 记数法）不互相比较
+    function tokenValue(t) {
+        var s = t.replace(/\s+/g, "");
+        var m = s.match(/^(.*?)(QaVg|QiVg|SxVg|SpVg|OcVg|NoVg|Qad|Qid|Sxd|Spd|Ocd|Nod|Qd|Qn|Qa|Qi|Sx|Sp|Oc|No|De|Ud|Dd|Td|UVg|DVg|TVg|Vg|[KMBT])$/);
+        var mul = 0, k = "n";
+        if (m) {
+            s = m[1];
+            if (SUFFIX_POW[m[2]] === undefined) return null;
+            mul = SUFFIX_POW[m[2]];
+        }
+        if (s.charAt(0) === "e") {
+            var lg = eLog10(s);
+            if (lg === null) return null;
+            return { k: "e", v: lg + mul };
+        }
+        var v = plainValue(s);
+        if (v === null) return null;
+        return { k: "n", v: v * Math.pow(10, mul) };
+    }
+
+    function sameValue(x, y) {
+        if (!x || !y || x.k !== y.k) return false;
+        if (!isFinite(x.v) || !isFinite(y.v)) return x.v === y.v;
+        return Math.abs(x.v - y.v) <= Math.max(1, Math.abs(x.v)) * 1e-9;
+    }
+
+    function syncNumbers(src, out) {
+        if (src === out) return out;
+        var a = numSpans(src), b = numSpans(out);
+        if (!a.length || !b.length) return out;
+        var used = [], i, j;
+        for (i = 0; i < a.length; i++) used.push(false);
+        var edits = [];
+        for (i = 0; i < b.length; i++) {
+            var tok = b[i].text, at = b[i].at, len = b[i].len;
+            var prev = out.charAt(at - 1), after = out.charAt(at + len);
+            // 标识符里的数字（ErUp 4a、MC1、SU94、PU41）不能当数值改：后面跟小写字母或
+            // 前面是大写字母。例外见下面的「4b → 4.000B」。
+            var maybeIdent = /[a-z]/.test(after) || /[A-Z]/.test(prev);
+            // 先找「写法完全相同」的原文 token，避免把 1.000 这种格式套到别的 1 上
+            var pick = -1;
+            for (j = 0; j < a.length; j++) {
+                if (!used[j] && a[j].text === tok) { pick = j; break; }
+            }
+            // 再找「值相同」的：译文写 1.25M、原文被游戏展开成 1,250,000 就靠这一步
+            if (pick < 0) {
+                var v = tokenValue(tok);
+                if (v !== null) {
+                    for (j = 0; j < a.length; j++) {
+                        if (used[j]) continue;
+                        if (sameValue(tokenValue(a[j].text), v)) { pick = j; break; }
+                    }
+                }
+            }
+            if (pick < 0) continue;
+            var srcText = a[pick].text;
+            var consume = 0;
+            if (maybeIdent) {
+                // 唯一放行的标识符形态：译文 "4b"、原文 "4.000B"（同一个后缀，大小写不同）
+                if (!(/[a-z]/.test(after) && /[A-Z]$/.test(srcText) && after.toUpperCase() === srcText.charAt(srcText.length - 1))) continue;
+                consume = 1;
+            }
+            used[pick] = true;
+            if (srcText === tok) continue;
+            edits.push({ at: at, len: len + consume, text: srcText });
+        }
+        // 从右往左改，前面的下标才不会失效
+        for (i = edits.length - 1; i >= 0; i--) {
+            out = out.slice(0, edits[i].at) + edits[i].text + out.slice(edits[i].at + edits[i].len);
+        }
+        return out;
+    }
+
     // 「归一后的写法 → 词典键」索引，首次用到时建好（约 4000 条）
     var normIndex = null;
     function getNormIndex() {
@@ -391,6 +515,9 @@
                 return RANK_NAMES[n] !== undefined ? RANK_NAMES[n] : m;
             });
         }
+        // 译文里的数字沿用源码写法（1.25M、ee10），把原文在运行时被游戏重排后的
+        // 写法搬进来，玩家切换记数法时译文也跟着变
+        if (out !== str) out = syncNumbers(str, out);
         // 没翻出来的结果不缓存：记数法/精度或别名表变化后，同一条文本可能就能命中了
         if (out !== str) {
             if (cache.size >= CACHE_MAX) cache.clear();
