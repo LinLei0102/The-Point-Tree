@@ -156,6 +156,156 @@
     var RANK_RE = /^([A-Z][A-Za-z]+) (\d{1,6})$/;
     var RANK_NONE_RE = /^([A-Z][A-Za-z]+)$/;
 
+    // ------------------------------------------------------------------
+    // 3.5 数字写法归一
+    //     游戏渲染文本前会用 notationChooserText()（js/utils/NumberFormating.js）
+    //     重排文中的数字：
+    //         50M   → 50,000,000   （缩写被展开）
+    //         3750  → 3,750        （补上千分位）
+    //         0.1   → 0.100        （补足小数位）
+    //         4.0   → 4            （去掉小数末尾的 0）
+    //     运行时字符串因此与词典键对不上，长句只能被碎片词条零敲碎打地改写，
+    //     出现「Endgame: 共 11 SP + 50,000,000 (New Layer currency)」这种中英混杂。
+    //     这里做两件事：
+    //       ① 抹平千分位与小数末尾的 0（词典键与运行时字符串同样归一后比对）
+    //       ② 把被展开的长数字压回 K/M/B/T/Qd 缩写，再查一次
+    // ------------------------------------------------------------------
+    function normNums(s) {
+        return s.replace(/(^|[^A-Za-z0-9.])(\d[\d,]*)(?:\.(\d+))?(?![0-9A-Za-z.])/g,
+            function (m, pre, int, frac) {
+                var v = int.replace(/,/g, "");
+                if (frac !== undefined) {
+                    frac = frac.replace(/0+$/, "");
+                    return pre + v + (frac ? "." + frac : "");
+                }
+                return pre + v;
+            });
+    }
+
+    var SCALE = [[1e15, "Qd"], [1e12, "T"], [1e9, "B"], [1e6, "M"], [1e3, "K"]];
+    function compactNumber(digits) {
+        var v = Number(digits);
+        if (!isFinite(v) || v < 1e3) return null;
+        for (var i = 0; i < SCALE.length; i++) {
+            var p = SCALE[i][0];
+            // 只还原成「整数 + 后缀」的写法（50,000,000 → 50M）；
+            // 411,411 这类压不成整数的保持原样。
+            if (v >= p && v % p === 0 && v / p < 1000) return String(v / p) + SCALE[i][1];
+        }
+        return null;
+    }
+
+    // 把被展开的长数字压回缩写，生成候选串（最多 8 种组合）
+    function compactVariants(str) {
+        var re = /(^|[^A-Za-z0-9.e])(\d{1,3}(?:,\d{3})+)/g;
+        var m, res = [""], pos = 0, n = 0;
+        while ((m = re.exec(str)) && res.length < 8) {
+            var head = str.slice(pos, m.index + m[1].length);
+            var short = compactNumber(m[2].replace(/,/g, ""));
+            var alts = short ? [m[2], short] : [m[2]];
+            var next = [];
+            for (var i = 0; i < res.length; i++) {
+                for (var j = 0; j < alts.length; j++) next.push(res[i] + head + alts[j]);
+            }
+            res = next.slice(0, 8);
+            pos = m.index + m[0].length;
+            n++;
+        }
+        if (!n) return null;
+        var tail = str.slice(pos), out = [];
+        for (var k = 0; k < res.length; k++) out.push(res[k] + tail);
+        return out;
+    }
+
+    // 「归一后的写法 → 词典键」索引，首次用到时建好（约 4000 条）
+    var normIndex = null;
+    function getNormIndex() {
+        if (normIndex) return normIndex;
+        normIndex = {};
+        function add(k) {
+            var n = normNums(k);
+            if (n === k) return;
+            if (!Object.prototype.hasOwnProperty.call(normIndex, n)) normIndex[n] = k;
+            else if (normIndex[n] !== k) normIndex[n] = null;   // 归一后撞车：弃用，免误译
+        }
+        for (var k in exact) add(k);
+        for (var f in fragment) add(f);   // fragment 里也有整句键，同样要能反查
+        return normIndex;
+    }
+
+    // 「游戏渲染后的写法 → 词典键」别名索引
+    // 游戏在渲染前用 notationChooserText() 重排数字，规则很碎：缩写展开、补千分位、
+    // 补 / 去小数末尾的 0、e 记数法取整、甚至连 "3," 里的逗号都会被吞掉。
+    // 逐条逆向猜不可靠，这里干脆用游戏自己的格式化函数把每个词典键跑一遍，
+    // 得到「这行在运行时会长成什么样」，再拿运行时字符串直接反查。
+    var aliasMap = null, aliasStamp = null, aliasProbedAt = 0;
+    function getAliasMap() {
+        // 记数法 / 精度切换后渲染结果会变，用一次「探针格式化」判断要不要重建
+        // （探针每秒最多算一次，避免每个文本节点都跑一遍格式化）
+        if (typeof window.notationChooserText !== "function" || typeof window.format !== "function") return null;
+        var now = Date.now();
+        if (aliasMap && now - aliasProbedAt < 1000) return aliasMap;
+        aliasProbedAt = now;
+        var stamp;
+        // 探针要选一段「一定会被重排」的文字：刚加载时玩家设置还没读进来，
+        // 格式化结果与设置读入后不同，靠它判断要不要重建别名表。
+        try { stamp = window.notationChooserText("1.25M Sac"); } catch (e) { return aliasMap; }
+        if (aliasMap && stamp === aliasStamp) return aliasMap;
+        aliasStamp = stamp;
+        aliasMap = {};
+        function add(k) {
+            if (k.indexOf("<") >= 0 || !/[0-9]/.test(k)) return;
+            var r;
+            try { r = window.notationChooserText(k); } catch (e) { return; }
+            if (typeof r !== "string" || r === k) return;
+            if (!Object.prototype.hasOwnProperty.call(aliasMap, r)) aliasMap[r] = k;
+        }
+        for (var k in exact) add(k);
+        for (var f in fragment) add(f);
+        // 更新日志是「一整块 HTML」一次性交给格式化函数的，数字重排的上下文与
+        // 单句不同（例如 ee10 → e1e10、ErUp 4b → ErUp 4.000B）。只能把整块格式化，
+        // 再按 <br> 与原文对齐，把「渲染后的整行」也登记成别名。
+        try {
+            if (modInfo && typeof modInfo.changelog === "string") {
+                var rawLines = modInfo.changelog.split("<br>");
+                var fmtLines = window.notationChooserText(modInfo.changelog).split("<br>");
+                for (var i = 0; i < rawLines.length && i < fmtLines.length; i++) {
+                    var a = rawLines[i].replace(/^\s+|\s+$/g, "");
+                    var b = fmtLines[i].replace(/^\s+|\s+$/g, "");
+                    if (!a || a === b) continue;
+                    if (!Object.prototype.hasOwnProperty.call(exact, a)) continue;
+                    if (!Object.prototype.hasOwnProperty.call(aliasMap, b)) aliasMap[b] = a;
+                }
+            }
+        } catch (e) { /* 没有 modInfo 就跳过 */ }
+        return aliasMap;
+    }
+
+    // 查词典：整串 → 渲染别名 → 数字写法归一 → 缩写还原
+    function lookupKey(str) {
+        if (Object.prototype.hasOwnProperty.call(exact, str)) return str;
+        if (!/[0-9]/.test(str)) return null;
+        var alias = getAliasMap();
+        if (alias && Object.prototype.hasOwnProperty.call(alias, str)) return alias[str];
+        var idx = getNormIndex();
+        var n = normNums(str);
+        // 运行时字符串本身可能「看着就规范」（游戏把 3,750 写成 3,750 又或吞掉逗号），
+        // 所以 n 与 str 相同也要查一次归一索引：词典键的写法未必规范。
+        if (Object.prototype.hasOwnProperty.call(exact, n)) return n;
+        if (idx[n]) return idx[n];
+        if (str.indexOf(",") >= 0) {
+            var alts = compactVariants(str);
+            if (alts) {
+                for (var i = 0; i < alts.length; i++) {
+                    if (Object.prototype.hasOwnProperty.call(exact, alts[i])) return alts[i];
+                    var an = normNums(alts[i]);
+                    if (an !== alts[i] && idx[an]) return idx[an];
+                }
+            }
+        }
+        return null;
+    }
+
     function translate(str) {
         if (!ENABLED || typeof str !== "string" || str.length < 2) return str;
         // 换行符规范化：源码文件在 Windows 上常是 CRLF，但 JS 引擎解析
@@ -171,14 +321,15 @@
         if (OUTPUTS[str] === 1) return str;                 // 已是译文，幂等返回
         if (cache.has(str)) return cache.get(str);
         var out;
-        if (Object.prototype.hasOwnProperty.call(exact, str)) {
-            var ev = exact[str];
+        var hitKey = lookupKey(str);
+        if (hitKey !== null) {
+            var ev = Object.prototype.hasOwnProperty.call(exact, hitKey) ? exact[hitKey] : fragment[hitKey];
             // 只有「原文是 id 形态、译文也仍是 id 形态」才认为这条词典没有真正翻译
             //（例如 foo-bar → foo-bar），保留原文以免误伤代码标识符。
             // 若译文已中文化（如 Transcending-Dimensional → 超越-维度），即使译文里
             // 带短横线也应当使用译文——否则像 Supra-Eternity、Supra-Reality 这类
             // 成就名会永远显示英文。
-            out = (idShape(str) && typeof ev === "string" && idShape(ev)) ? str : ev;
+            out = (idShape(hitKey) && typeof ev === "string" && idShape(ev)) ? hitKey : ev;
         } else if (PROTECTED[str] === 1 || PROTECTED[str.replace(/^\s+|\s+$/g, "")] === 1) {
             // 模板补丁的产物（如「The Prestige Tree 由 Jacorb 与 Aarex 制作」）：
             // 里面的英文专名不能再被子串词条改写。
@@ -214,6 +365,13 @@
             .replace(/(\d+(?:\.\d+)?)\s?h(?![\w])/g, "$1小时")
             .replace(/(\d+(?:\.\d+)?)\s?m(?![\w])/g, "$1分")
             .replace(/(\d+(?:\.\d+)?)\s?s(?![\w])/g, "$1秒");
+        // 精通等级：游戏把「Your rank is None (#0)」拼成一串，等级名随名次数字变化，
+        // 这里只替换「等级名 + (#数字)」这种形态，别的地方不动。
+        if (out.indexOf(" (#") >= 0) {
+            out = out.replace(/\b([A-Z][A-Za-z]+)(?= \(#\d+\))/g, function (m, n) {
+                return RANK_NAMES[n] !== undefined ? RANK_NAMES[n] : m;
+            });
+        }
         if (cache.size >= CACHE_MAX) cache.clear();
         cache.set(str, out);
         return out;
@@ -567,20 +725,27 @@
         var t = node.nodeValue;
         if (!t || !/[A-Za-z]{2}/.test(t)) return;
         if (node.__ptDone === t) return;
-        var zh = translate(t);
         // 源码里跨行缩进、带首尾空白的文案（index.html 的 Discord 链接、changelog 每行后跟的
-        // <br> 前空格等）会带一串换行 / 制表符 / 尾随空格，词典键是压平后的形态，
-        // 这里依次尝试：压平空白 → 压平并去首尾空白
-        if (zh === t && /\s{2,}|\n|^\s|\s$/.test(t)) {
+        // <br> 前空格等）会带一串换行 / 制表符 / 尾随空格，词典键是压平后、去首尾空白的形态。
+        // 注意顺序：**先看哪个形态能整句命中词典**，再看碎片替换的结果。
+        // 早期版本是「压平后只要有碎片改动就收工」，于是带数字的长句（如 changelog 里
+        // 被游戏展开成 50,000,000 的那行）只被碎片规则改了一半，中英混杂。
+        var cands = [t];
+        if (/\s{2,}|\n|^\s|\s$/.test(t)) {
             var flat = t.replace(/\s+/g, " ");
-            var z2 = translate(flat);
-            if (z2 !== flat) zh = z2;
-            else {
-                var tr = flat.trim();
-                if (tr !== flat) {
-                    var z3 = translate(tr);
-                    if (z3 !== tr) zh = z3;
-                }
+            cands.push(flat);
+            if (flat.trim() !== flat) cands.push(flat.trim());
+        }
+        var zh = null, ci;
+        for (ci = 0; ci < cands.length; ci++) {
+            if (lookupKey(cands[ci]) !== null) { zh = translate(cands[ci]); break; }
+        }
+        if (zh === null) {
+            // 没有整句词条：退回「逐级压平 + 碎片替换」，取第一个有改动的结果
+            zh = translate(t);
+            for (ci = 1; ci < cands.length && zh === t; ci++) {
+                var z = translate(cands[ci]);
+                if (z !== cands[ci]) zh = z;
             }
         }
         if (zh !== t) {

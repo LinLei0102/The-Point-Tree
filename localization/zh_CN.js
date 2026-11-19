@@ -4,7 +4,7 @@
 //  由 tools/build_dict.js 从 tools/parts/*.json 合并生成，请勿手工编辑。
 //  exact    ：整串精确匹配（层数据里的静态文案、完整句子）
 //  fragment ：子串替换（动态拼串的静态片段、标签内文字）
-//  词条数：exact 4027 + fragment 428
+//  词条数：exact 4029 + fragment 428
 // ============================================================================
 window.PT_I18N = {"zh-CN": {
   exact: {
@@ -978,6 +978,7 @@ window.PT_I18N = {"zh-CN": {
   "Changes (v2.0.0)":"改动（v2.0.0）",
   "Changes (v2.1)":"改动（v2.1）",
   "Changes (v2.2: Mastery)":"改动（v2.2：精通）",
+  "Changes (v2.3: Dimensional Shift 4 and Supreme Buyable 5)":"改动（v2.3：维度转换 4 与至尊可购买项 5）",
   "Choice 1":"选择 1",
   "Choice 2":"抉择 2",
   "Choice Row Upgs 2":"抉择行升级 2",
@@ -2047,6 +2048,7 @@ window.PT_I18N = {"zh-CN": {
   "M.T.I.E.R. Dimensional":"M.T.I.E.R. 维度",
   "MA66 description fixed":"修正了 MA66 的描述",
   "Made all Savebanks not have any Endgame Secret Achievements":"让所有存档库都不含终局秘密成就",
+  "Made ee and e start at 1.000T instead of e9.":"让 ee 与 e 从 1T 起，而非 e9 起。",
   "Made ee and e start at e12, instead of e9.":"让 ee 与 e 从 e12 起而非 e9 起。",
   "Made it such that you CANNOT GAIN EF BEFORE UNLOCKING EF":"使你在解锁 EF 之前无法获得 EF",
   "Made it that it will increase to 1 cell when cell < 0":"使细胞 < 0 时会提升到 1 个细胞",
@@ -4119,7 +4121,7 @@ window.PT_I18N = {"zh-CN": {
   " Supreme points.":" 至尊点数。",
   " Supreme Pts + ":" 至尊点数 + ",
   " Supreme Pts]":" 至尊点数]",
-  " time.":" 次。",
+  " time.":" 时间。",
   " times the current universe age. That's a lot of time!":" 个当前宇宙年龄。这可真是漫长的时间！",
   " times.":" 次。",
   " to all previous buyables":" 效果作用于此前所有可购买项",
