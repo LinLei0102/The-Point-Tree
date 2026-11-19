@@ -141,6 +141,21 @@
     // 单独查表比丢进正则安全（"on" 当子串会误伤 "on the left" 之类）
     var SPECIAL = { off: "关", on: "开", ultra: "极强", earthquake: "地震" };
 
+    // 精通等级名（v4.1r 新增的 Mastery Ranks）：
+    // rankName() 渲染成 `Good 2` 这种「名次 + 空格 + 序号」的文本节点，序号随进度变化，
+    // 无法用静态词条覆盖，这里按前缀查表，序号原样保留。
+    var RANK_NAMES = {
+        None: "无", Good: "良好", Great: "优秀", Better: "更佳", Excellent: "卓越",
+        Terrific: "极佳", Superb: "精湛", Awesome: "惊人", Amazing: "非凡", Fantastic: "奇妙",
+        Incredible: "难以置信", Outstanding: "出类拔萃", Insane: "疯狂", Perfection: "完美",
+        Holy: "神圣", Angelic: "天使", Demonic: "恶魔", Godly: "神级", Divine: "神性",
+        Penultimate: "倒数第二", Supreme: "至尊", Maxima: "极值", Cosmic: "宇宙",
+        Transcended: "超越", Celestial: "天界", Absolute: "绝对", Insanity: "癫狂",
+        Unfathomable: "深不可测", Awakened: "觉醒", Unbound: "无界", Singularity: "奇点",
+    };
+    var RANK_RE = /^([A-Z][A-Za-z]+) (\d{1,6})$/;
+    var RANK_NONE_RE = /^([A-Z][A-Za-z]+)$/;
+
     function translate(str) {
         if (!ENABLED || typeof str !== "string" || str.length < 2) return str;
         // 换行符规范化：源码文件在 Windows 上常是 CRLF，但 JS 引擎解析
@@ -148,6 +163,10 @@
         // 「运行时字符串(LF)」对不上。这里统一成 \n 再匹配。
         if (str.indexOf("\r") >= 0) str = str.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
         if (SPECIAL[str] !== undefined) return SPECIAL[str];
+        var rk = RANK_RE.exec(str);
+        if (rk && RANK_NAMES[rk[1]] !== undefined) return RANK_NAMES[rk[1]] + " " + rk[2];
+        var rk1 = RANK_NONE_RE.exec(str);
+        if (rk1 && RANK_NAMES[rk1[1]] !== undefined) return RANK_NAMES[rk1[1]];
         if (/^[A-Za-z0-9]$/.test(str)) return str;
         if (OUTPUTS[str] === 1) return str;                 // 已是译文，幂等返回
         if (cache.has(str)) return cache.get(str);
