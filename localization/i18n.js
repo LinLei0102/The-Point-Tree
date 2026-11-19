@@ -238,21 +238,40 @@
     // 补 / 去小数末尾的 0、e 记数法取整、甚至连 "3," 里的逗号都会被吞掉。
     // 逐条逆向猜不可靠，这里干脆用游戏自己的格式化函数把每个词典键跑一遍，
     // 得到「这行在运行时会长成什么样」，再拿运行时字符串直接反查。
-    var aliasMap = null, aliasStamp = null, aliasProbedAt = 0;
+    var aliasMap = null, aliasStamp = null, aliasChgLen = -2;
+    // 别名表重建（例如记数法切换、更新日志首次可用）后，已经遍历过的文本节点要再走一遍：
+    // 之前它们可能因为环境未就绪只留下了原文。
+    var aliasGen = 0, rescanQueued = false;
+    function scheduleRescan() {
+        if (rescanQueued) return;
+        rescanQueued = true;
+        setTimeout(function () {
+            rescanQueued = false;
+            try { if (document.body) walkDom(document.body); } catch (e) { /* ignore */ }
+        }, 0);
+    }
     function getAliasMap() {
-        // 记数法 / 精度切换后渲染结果会变，用一次「探针格式化」判断要不要重建
-        // （探针每秒最多算一次，避免每个文本节点都跑一遍格式化）
+        // 记数法 / 精度切换后渲染结果会变，用一次「探针格式化」判断要不要重建。
+        // 探针本身很便宜（一次短串格式化），只有「结果真的变了」才会重建整表。
         if (typeof window.notationChooserText !== "function" || typeof window.format !== "function") return null;
-        var now = Date.now();
-        if (aliasMap && now - aliasProbedAt < 1000) return aliasMap;
-        aliasProbedAt = now;
         var stamp;
         // 探针要选一段「一定会被重排」的文字：刚加载时玩家设置还没读进来，
         // 格式化结果与设置读入后不同，靠它判断要不要重建别名表。
         try { stamp = window.notationChooserText("1.25M Sac"); } catch (e) { return aliasMap; }
-        if (aliasMap && stamp === aliasStamp) return aliasMap;
+        // 更新日志（modInfo.changelog）要等 loader 定义好才能整块对齐；长度变了说明
+        // 这份内容第一次可用或发生了变化，必须重建一次，否则整块别名永远缺席。
+        var chgLen = -1;
+        try {
+            if (typeof modInfo !== "undefined" && modInfo && typeof modInfo.changelog === "string") chgLen = modInfo.changelog.length;
+        } catch (e) { /* ignore */ }
+        if (aliasMap && stamp === aliasStamp && chgLen === aliasChgLen) return aliasMap;
         aliasStamp = stamp;
+        aliasChgLen = chgLen;
         aliasMap = {};
+        // 别名表换了，之前按旧环境缓存的「原文→原文」结果要作废，否则会一直沿用
+        cache.clear();
+        aliasGen++;
+        scheduleRescan();
         function add(k) {
             if (k.indexOf("<") >= 0 || !/[0-9]/.test(k)) return;
             var r;
@@ -372,8 +391,11 @@
                 return RANK_NAMES[n] !== undefined ? RANK_NAMES[n] : m;
             });
         }
-        if (cache.size >= CACHE_MAX) cache.clear();
-        cache.set(str, out);
+        // 没翻出来的结果不缓存：记数法/精度或别名表变化后，同一条文本可能就能命中了
+        if (out !== str) {
+            if (cache.size >= CACHE_MAX) cache.clear();
+            cache.set(str, out);
+        }
         return out;
     }
 
@@ -724,7 +746,7 @@
     function translateTextNode(node) {
         var t = node.nodeValue;
         if (!t || !/[A-Za-z]{2}/.test(t)) return;
-        if (node.__ptDone === t) return;
+        if (node.__ptDone === t && node.__ptGen === aliasGen) return;
         // 源码里跨行缩进、带首尾空白的文案（index.html 的 Discord 链接、changelog 每行后跟的
         // <br> 前空格等）会带一串换行 / 制表符 / 尾随空格，词典键是压平后、去首尾空白的形态。
         // 注意顺序：**先看哪个形态能整句命中词典**，再看碎片替换的结果。
@@ -750,9 +772,11 @@
         }
         if (zh !== t) {
             node.__ptDone = zh;      // 记录「我们自己写进去的值」，防止自己触发自己
+            node.__ptGen = aliasGen;
             node.nodeValue = zh;
         } else {
             node.__ptDone = t;
+            node.__ptGen = aliasGen;
         }
     }
 
